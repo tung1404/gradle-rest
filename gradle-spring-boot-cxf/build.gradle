@@ -1,0 +1,72 @@
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'war'
+
+group = 'vn.tungnt'
+version = '1.0.0-SNAPSHOT'
+buildDir = 'target'
+
+ext {
+	javaVersion = '1.8'
+	encoding = 'UTF-8'
+	versions = [
+		cxf : '3.0.0'
+	]
+}
+
+buildscript {
+    repositories {
+    	jcenter()
+    	mavenCentral()
+    }
+    dependencies {
+        classpath ('org.springframework.boot:spring-boot-gradle-plugin:1.2.7.RELEASE')
+    }
+}
+apply plugin: 'spring-boot'			// FIX: able to run junit test and embeddedContainer
+
+sourceCompatibility = javaVersion
+targetCompatibility = javaVersion
+[compileJava, compileTestJava]*.options*.encoding = encoding
+
+repositories {
+    jcenter()
+    mavenCentral() 
+}
+
+def lib = [
+	'spring' : [
+		"org.springframework.boot:spring-boot-starter-web",
+		"org.springframework.boot:spring-boot-starter-data-jpa"
+	],
+	'cxf' : [
+		"org.apache.cxf:cxf-rt-frontend-jaxrs:${versions.cxf}"
+	],
+	'etc' : [
+		"org.codehaus.jackson:jackson-jaxrs:1.9.0",
+		"org.apache.commons:commons-lang3:3.3.2",
+		"mysql:mysql-connector-java:5.1.21",
+		"com.google.guava:guava:19.0"
+		],
+	'test' : [
+		"org.springframework.boot:spring-boot-starter-test"
+	]
+]
+
+dependencies {
+	compile lib.spring, lib.cxf, lib.etc
+	testCompile lib.test
+}
+
+def makeDirectory = { if (!it.exists()) it.mkdirs() }
+
+// 1. java source directory  : src/main/java, src/test/java
+// 2. resource directory     : src/main/resource, src/test/resource
+// 3. web source directory   : src/main/webapp, src/main/webapp/WEB-INF
+task initProject(description: 'initialize project') << {
+	sourceSets*.java.srcDirs*.each makeDirectory
+	sourceSets*.resources.srcDirs*.each makeDirectory
+	[webAppDir, new File(webAppDir, '/WEB-INF')].each makeDirectory
+}
+eclipseClasspath.dependsOn initProject
+compileJava.dependsOn clean
